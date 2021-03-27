@@ -1,0 +1,1 @@
+scrapy crawl oxford -o oxford.json

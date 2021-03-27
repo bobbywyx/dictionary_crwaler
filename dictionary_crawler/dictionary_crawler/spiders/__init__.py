@@ -5,8 +5,13 @@ import scrapy
 # by Peyman (mohsenikiasari@ce.sharif.edu) in 2019.
 
 import os
+os.environ["http_proxy"] = "http://127.0.0.1:11000"
+os.environ["https_proxy"] = "http://127.0.0.1:11000"
+#set proxy
+
 working_dir = os.getcwd()
 words = []
+
 #读取dump.txt
 
 def read(file_path):

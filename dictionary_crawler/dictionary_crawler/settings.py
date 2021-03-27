@@ -28,7 +28,15 @@ CONCURRENT_REQUESTS = 512
 # Configure a delay for requests for the same website (default: 0)
 # See https://doc.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 0.0
+DOWNLOAD_DELAY = 1.0
+
+RETRY_HTTP_CODES = [429]
+DOWNLOADER_MIDDLEWARES = {
+    'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
+    'dictionary_crawler.middlewares.TooManyRequestsRetryMiddleware': 543,
+    'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None, # 关闭默认方法
+    'scrapy_fake_useragent.middleware.RandomUserAgentMiddleware': 400, # 开启
+}
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
 #CONCURRENT_REQUESTS_PER_IP = 16
