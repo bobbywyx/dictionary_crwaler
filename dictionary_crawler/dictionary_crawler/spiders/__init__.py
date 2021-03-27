@@ -111,7 +111,7 @@ class LongmanCrawler(scrapy.Spider):
                 gram_header = ""
             
             try:
-                gram_header += (sections.xpath(".//span[@class='POS']/text()").extract()[0]).strip()
+                gram_header += " " + (sections.xpath(".//span[@class='POS']/text()").extract()[0]).strip()
             except:
                 pass
         
@@ -149,14 +149,24 @@ class LongmanCrawler(scrapy.Spider):
                         definition_dict[part_of_speech] = def_list
         
             collo_list = sections.xpath(".//span[@class='Sense']/span[@class='ColloExa']/span[@class='COLLO']").extract()
-            collo_list = [re.sub(r'<.*?>', "", i[18:-7]).strip() for i in collo_list]
-            collo_list = ["-" + i + "\"" for i in collo_list if i]
+            collo_list = [re.sub(r'<.*?>', "", i[20:-7]).strip() for i in collo_list]
+            collo_list = [ i  for i in collo_list if i]
 
             if collo_list and "Usage-" + part_of_speech:
                 if "Usage-" + part_of_speech in definition_dict:
                     definition_dict["Usage-" + part_of_speech] += collo_list
                 else:
                     definition_dict["Usage-" + part_of_speech] = collo_list
+
+            gramexa_list = sections.xpath(".//span[@class='Sense']/span[@class='GramExa']/span[@class='PROPFORMPREP']").extract()
+            gramexa_list = [re.sub(r'<.*?>', "", i[26:-7]).strip() for i in gramexa_list]
+            gramexa_list = [i  for i in gramexa_list if i]
+
+            if gramexa_list and "Usage-" + part_of_speech:
+                if "Usage-" + part_of_speech in definition_dict:
+                    definition_dict["Usage-" + part_of_speech] += gramexa_list
+                else:
+                    definition_dict["Usage-" + part_of_speech] = gramexa_list
 
         if definition_dict:
             yield {word: definition_dict}
