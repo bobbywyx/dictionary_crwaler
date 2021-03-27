@@ -23,7 +23,7 @@ def read(file_path):
     # print(contents)
     if not contents == '':
         for i in contents:
-            # print(i,end='')
+            print(i,end='')
             if i == '\n':
                 lines+=1
                 output.append(string)
@@ -38,7 +38,7 @@ def read(file_path):
 
 # words = ['I', 'hope', 'you', 'like', 'this', 'dictionary', 'web', 'crawler']
 words = read(working_dir+'/dump.txt')
-print(words)
+#print(words)
 
 #  scrapy crawl oxford -o oxford.jl
 class OxfordCrawler(scrapy.Spider):
@@ -89,15 +89,74 @@ class LongmanCrawler(scrapy.Spider):
                 part_of_speech = (sections.xpath(".//span[@class='POS']/text()").extract()[0]).strip()
             except:
                 part_of_speech = False
+
+            try:
+                gram_list1 = sections.xpath(".//span[@class='Sense']/span[@class='GRAM']").extract()
+            except:
+                gram_list1 = []
+            gram_list = []
+            for i in gram_list1:
+                try:
+                    gram_item = re.search(r'</span>([^\/]*)<span\s+class="neutral span">',i).group(0)
+                    gram_item = gram_item.replace("</span>","")
+                    gram_item = gram_item.replace("<span class=\"neutral span\">","")
+                    gram_list.append(gram_item)
+                except:
+                    pass
+            gram_list = [i for i in gram_list if i]
+
+            try:
+                gram_header = (sections.xpath(".//span[@class='GRAM']/text()").extract()[0]).strip()
+            except:
+                gram_header = ""
+            
+            try:
+                gram_header += (sections.xpath(".//span[@class='POS']/text()").extract()[0]).strip()
+            except:
+                pass
+        
             def_list = sections.xpath(".//span[@class='Sense']/span[@class='DEF']").extract()
             def_list = [re.sub(r'<.*?>', "", i[18:-7]).strip() for i in def_list]
             def_list = [i for i in def_list if i]
 
-            if def_list and part_of_speech:
-                if part_of_speech in definition_dict:
-                    definition_dict[part_of_speech] += def_list
+            try:
+                def_header = (sections.xpath(".//span[@class='GRAM']/text()").extract()[0]).strip()
+            except:
+                def_header = ""
+
+            print(len(def_list))
+            if len(def_list) is 1:
+                def_list.append(def_header)
+
+            defgram_list = []
+            for i in range(0,len(def_list) - 1):
+                try:
+                    gram_item2 = gram_list[i]
+                except:
+                    gram_item2 = gram_header
+                defgram_list.append("**" + gram_item2 + "**   " + def_list[i])
+            try:
+                if defgram_list and part_of_speech:
+                    if part_of_speech in definition_dict:
+                        definition_dict[part_of_speech] += defgram_list
+                    else:
+                        definition_dict[part_of_speech] = defgram_list
+            except:
+                if def_list and part_of_speech:
+                    if part_of_speech in definition_dict:
+                        definition_dict[part_of_speech] += def_list
+                    else:
+                        definition_dict[part_of_speech] = def_list
+        
+            collo_list = sections.xpath(".//span[@class='Sense']/span[@class='ColloExa']/span[@class='COLLO']").extract()
+            collo_list = [re.sub(r'<.*?>', "", i[18:-7]).strip() for i in collo_list]
+            collo_list = ["-" + i + "\"" for i in collo_list if i]
+
+            if collo_list and "Usage-" + part_of_speech:
+                if "Usage-" + part_of_speech in definition_dict:
+                    definition_dict["Usage-" + part_of_speech] += collo_list
                 else:
-                    definition_dict[part_of_speech] = def_list
+                    definition_dict["Usage-" + part_of_speech] = collo_list
 
         if definition_dict:
             yield {word: definition_dict}

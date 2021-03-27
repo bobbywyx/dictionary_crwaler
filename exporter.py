@@ -281,6 +281,4 @@ for i in word_data:
             para.add_run("\n")
         # para.add_run(characteristic[1])  #释义
 
-        para.add_run('\n')
-
 document.save('demo.docx')
