@@ -1,5 +1,6 @@
 import os
 import json
+from docx.shared import RGBColor
 from openpyxl import load_workbook
 from docx import Document
 from docx.shared import Inches
@@ -254,14 +255,15 @@ for i in word_data:
     para.add_run('\n')  # 换行
 
     for characteristic in i.get(list(i.keys())[0]).items():
-        para.add_run('  ')
+        para.add_run('    ')
 
         # 词性
         print(characteristic)
         run = para.add_run(characteristic[0])
         font = run.font
         font.name = '等线'
-        font.size = Pt(11)
+        font.size = Pt(8)
+        font.color.rgb = RGBColor(250,200,200)
         font.italic = True
         # para.add_run(characteristic[0])  #词性
 
@@ -276,8 +278,10 @@ for i in word_data:
             run = para.add_run(definitions)
             font = run.font
             font.name = 'Consolas'
-            font.size = Pt(11)
+            font.size = Pt(8)
+
             font.italic = False
+            font.bold = True
             para.add_run("\n")
         # para.add_run(characteristic[1])  #释义
 
