@@ -82,29 +82,16 @@ class LongmanCrawler(scrapy.Spider):
 
     def parse(self, response):
         word = response.request.url.split("/")[-1]
-        definition_dict = {}
+        WordList = []
 
         for sections in response.xpath("//span[@class='dictentry']"):
+            #part of speech setion
             try:
                 part_of_speech = (sections.xpath(".//span[@class='POS']/text()").extract()[0]).strip()
             except:
-                part_of_speech = False
+                part_of_speech = ""
 
-            try:
-                gram_list1 = sections.xpath(".//span[@class='Sense']/span[@class='GRAM']").extract()
-            except:
-                gram_list1 = []
-            gram_list = []
-            for i in gram_list1:
-                try:
-                    gram_item = re.search(r'</span>([^\/]*)<span\s+class="neutral span">',i).group(0)
-                    gram_item = gram_item.replace("</span>","")
-                    gram_item = gram_item.replace("<span class=\"neutral span\">","")
-                    gram_list.append(gram_item)
-                except:
-                    pass
-            gram_list = [i for i in gram_list if i]
-
+            #grammar section
             try:
                 gram_header = (sections.xpath(".//span[@class='GRAM']/text()").extract()[0]).strip()
             except:
@@ -114,148 +101,110 @@ class LongmanCrawler(scrapy.Spider):
                 gram_header += " " + (sections.xpath(".//span[@class='POS']/text()").extract()[0]).strip()
             except:
                 pass
-        
-            def_list = sections.xpath(".//span[@class='Sense']/span[@class='DEF']").extract()
-            def_list = [re.sub(r'<.*?>', "", i[18:-7]).strip() for i in def_list]
-            def_list = [i for i in def_list if i]
 
-            try:
-                def_header = (sections.xpath(".//span[@class='GRAM']/text()").extract()[0]).strip()
-            except:
-                def_header = ""
+            print(part_of_speech,gram_header)
+            #print(len(def_list))
+            #if len(def_list) is 1:
+            #    def_list.append(def_header)
 
-            print(len(def_list))
-            if len(def_list) is 1:
-                def_list.append(def_header)
-
-            defgram_list = []
-            for i in range(0,len(def_list) - 1):
+            for sections in response.xpath(".//span[@class='Sense']"):
+                senseSUM = []
                 try:
-                    gram_item2 = gram_list[i]
+                    gram_list = sections.xpath(".//span[@class='GRAM']").extract()
                 except:
-                    gram_item2 = gram_header
-                defgram_list.append("**" + gram_item2 + "**   " + def_list[i])
-            try:
-                if defgram_list and part_of_speech:
-                    if part_of_speech in definition_dict:
-                        definition_dict[part_of_speech] += defgram_list
-                    else:
-                        definition_dict[part_of_speech] = defgram_list
-            except:
-                if def_list and part_of_speech:
-                    if part_of_speech in definition_dict:
-                        definition_dict[part_of_speech] += def_list
-                    else:
-                        definition_dict[part_of_speech] = def_list
-        
-            collo_list = sections.xpath(".//span[@class='Sense']/span[@class='ColloExa']/span[@class='COLLO']").extract()
-            collo_list = [re.sub(r'<.*?>', "", i[20:-7]).strip() for i in collo_list]
-            collo_list = [ i  for i in collo_list if i]
+                    gram_list = []
+                
+                gram_list1 = []
 
-            if collo_list and "Usage-" + part_of_speech:
-                if "Usage-" + part_of_speech in definition_dict:
-                    definition_dict["Usage-" + part_of_speech] += collo_list
-                else:
-                    definition_dict["Usage-" + part_of_speech] = collo_list
+                for i in gram_list:
+                    try:
+                        gram_item = re.search(r'</span>([^\/]*)<span\s+class="neutral span">',i).group(0)
+                        gram_item = gram_item.replace("</span>","")
+                        gram_item = gram_item.replace("<span class=\"neutral span\">","")
+                        gram_list1.append(gram_item)
+                    except:
+                        pass
 
-            gramexa_list = sections.xpath(".//span[@class='Sense']/span[@class='GramExa']/span[@class='PROPFORMPREP']").extract()
-            gramexa_list = [re.sub(r'<.*?>', "", i[26:-7]).strip() for i in gramexa_list]
-            gramexa_list = [i  for i in gramexa_list if i]
+                def_list = sections.xpath(".//span[@class='DEF']").extract()
+                def_list = [re.sub(r'<.*?>', "", i[18:-7]).strip() for i in def_list]
+                def_list = [i for i in def_list if i]
 
-            if gramexa_list and "Usage-" + part_of_speech:
-                if "Usage-" + part_of_speech in definition_dict:
-                    definition_dict["Usage-" + part_of_speech] += gramexa_list
-                else:
-                    definition_dict["Usage-" + part_of_speech] = gramexa_list
+                def_list = sections.xpath(".//span[@class='DEF']").extract()
+                def_list = [re.sub(r'<.*?>', "", i[18:-7]).strip() for i in def_list]
+                def_list = [i for i in def_list if i]
 
-        if definition_dict:
-            yield {word: definition_dict}
+                collo_list = sections.xpath(".//span[@class='ColloExa']/span[@class='COLLO']").extract()
+                collo_list = [re.sub(r'<.*?>', "", i[20:-7]).strip() for i in collo_list]
+                collo_list = [ i  for i in collo_list if i]
 
+                gramexa_list1 = sections.xpath(".//span[@class='GramExa']/span[@class='PROPFORMPREP']").extract()
+                gramexa_list1 = [re.sub(r'<.*?>', "", i[26:-7]).strip() for i in gramexa_list1]
+                gramexa_list1 = [i for i in gramexa_list1 if i]
 
-#  scrapy crawl cambridge -o cambridge.jl
-class CambridgeCrawler(scrapy.Spider):
-    name = "cambridge"
-    allowed_domains = ["https://dictionary.cambridge.org"]
-    start_urls = ["https://dictionary.cambridge.org/dictionary/english/" + word for word in words]
+                gramexa_list2 = sections.xpath(".//span[@class='GramExa']/span[@class='PROPFORM']").extract()
+                gramexa_list2 = [re.sub(r'<.*?>', "", i[22:-7]).strip() for i in gramexa_list2]
+                gramexa_list2 = [i for i in gramexa_list2 if i]
 
-    def parse(self, response):
-        word = response.request.url.split("/")[-1]
-        definition_dict = {}
+                #processing after filtering
+                gramexa_list = gramexa_list1 + gramexa_list2
+                if len(gram_list1) >= 1:
+                    gram_list1 = [i + " " + part_of_speech for i in gram_list1]
+                elif len(gram_header) >= 1:
+                    gram_list1 = [gram_header]
+                #print(gram_list1,part_of_speech,def_list,collo_list,gramexa_list,gramexa_list2)
+                if len(def_list) >= 1:
+                    senseSUM = [gram_list1,def_list,collo_list,gramexa_list]
+                    #print(senseSUM)
+                    WordList.append(senseSUM)
+            
+            for sections in response.xpath(".//span[@class='Sense']/span[@class='Subsense']"):
+                senseSUM = []
+                try:
+                    gram_list = sections.xpath(".//span[@class='GRAM']").extract()
+                except:
+                    gram_list = []
+                
+                gram_list1 = []
 
-        for enrty in response.xpath("//div[@class='entry-body__el clrd js-share-holder']"):
-            part_of_speeches = enrty.xpath("./div[@class='pos-header']//span[@class='pos']/text()").extract()
-            def_list = enrty.xpath(
-                ".//div[@class='sense-body']/div[@class='def-block pad-indent']//b[@class='def']").extract()
-            def_list = [re.sub(r'<.*?>|:', "", i[15:-4]).strip() for i in def_list]
-            def_list = [i for i in def_list if i]
+                for i in gram_list:
+                    try:
+                        gram_item = re.search(r'</span>([^\/]*)<span\s+class="neutral span">',i).group(0)
+                        gram_item = gram_item.replace("</span>","")
+                        gram_item = gram_item.replace("<span class=\"neutral span\">","")
+                        gram_list1.append(gram_item)
+                    except:
+                        pass
 
-            if def_list and part_of_speech:
-                for part_of_speech in part_of_speeches:
-                    if part_of_speech in definition_dict:
-                        definition_dict[part_of_speech] += def_list
-                    else:
-                        definition_dict[part_of_speech] = def_list
+                def_list = sections.xpath(".//span[@class='DEF']").extract()
+                def_list = [re.sub(r'<.*?>', "", i[18:-7]).strip() for i in def_list]
+                def_list = [i for i in def_list if i]
 
-        if definition_dict:
-            yield {word: definition_dict}
+                def_list = sections.xpath(".//span[@class='DEF']").extract()
+                def_list = [re.sub(r'<.*?>', "", i[18:-7]).strip() for i in def_list]
+                def_list = [i for i in def_list if i]
 
+                collo_list = sections.xpath(".//span[@class='ColloExa']/span[@class='COLLO']").extract()
+                collo_list = [re.sub(r'<.*?>', "", i[20:-7]).strip() for i in collo_list]
+                collo_list = [ i  for i in collo_list if i]
 
-#  scrapy crawl webster -o webster.jl
-class WebsterCrawler(scrapy.Spider):
-    name = "webster"
-    allowed_domains = ["https://www.merriam-webster.com"]
-    start_urls = ["https://www.merriam-webster.com/dictionary/" + word for word in words]
+                gramexa_list1 = sections.xpath(".//span[@class='GramExa']/span[@class='PROPFORMPREP']").extract()
+                gramexa_list1 = [re.sub(r'<.*?>', "", i[26:-7]).strip() for i in gramexa_list1]
+                gramexa_list1 = [i for i in gramexa_list1 if i]
 
-    def parse(self, response):
-        word = response.request.url.split("/")[-1]
-        definition_dict = {}
+                gramexa_list2 = sections.xpath(".//span[@class='GramExa']/span[@class='PROPFORM']").extract()
+                gramexa_list2 = [re.sub(r'<.*?>', "", i[22:-7]).strip() for i in gramexa_list2]
+                gramexa_list2 = [i for i in gramexa_list2 if i]
 
-        part_of_speeches = [re.sub(r'\(.*\)', "", i).strip() for i in
-                            response.xpath("//span[@class='fl']/a/text()|//span[@class='fl']/text()").extract()]
-
-        for sections in response.xpath("//div[contains(@id, 'dictionary-entry')]/div[@class='vg']"):
-            part_of_speech = part_of_speeches.pop(0)
-            def_list = sections.xpath(
-                ".//span[@class='dtText' or @class='unText'][not(ancestor::span[@class='dtText'])]").extract()
-            def_list = [re.sub(r'<span.*>.+</span>', "", i[21:-7]) for i in def_list]
-            def_list = [re.sub(r'<.*?>|:', "", i).strip() for i in def_list]
-            def_list = [i for i in def_list if i]
-
-            if def_list and part_of_speech:
-                if part_of_speech in definition_dict:
-                    definition_dict[part_of_speech] += def_list
-                else:
-                    definition_dict[part_of_speech] = def_list
-
-        if definition_dict:
-            yield {word: definition_dict}
-
-
-#  scrapy crawl collins -o collins.jl
-class CollinsCrawler(scrapy.Spider):
-    name = "collins"
-    allowed_domains = ["https://www.collinsdictionary.com"]
-    start_urls = ["https://www.collinsdictionary.com/dictionary/english/" + word for word in words]
-
-    def parse(self, response):
-        word = response.request.url.split("/")[-1]
-        definition_dict = {}
-
-        for sections in response.xpath("//div[@class='dictionary Cob_Adv_Brit']"
-                                       "//div[@class='content definitions cobuild br']/div[@class='hom']"):
-            try:
-                part_of_speech = (sections.xpath(".//span[@class='pos']/text()").extract()[0]).strip()
-            except:
-                part_of_speech = False
-            def_list = sections.xpath("./div[@class='sense']/div[@class='def']").extract()
-            def_list = [re.sub(r'<.*?>', "", i[17:-6]).strip() for i in def_list]
-            def_list = [i for i in def_list if i]
-
-            if def_list and part_of_speech:
-                if part_of_speech in definition_dict:
-                    definition_dict[part_of_speech] += def_list
-                else:
-                    definition_dict[part_of_speech] = def_list
-
-        if definition_dict:
-            yield {word: definition_dict}
+                #processing after filtering
+                gramexa_list = gramexa_list1 + gramexa_list2
+                if len(gram_list1) >= 1:
+                    gram_list1 = [i + " " + part_of_speech for i in gram_list1]
+                elif len(gram_header) >= 1:
+                    gram_list1 = [gram_header]
+                #print(gram_list1,part_of_speech,def_list,collo_list,gramexa_list,gramexa_list2)
+                if len(def_list) >= 1:
+                    senseSUM = [gram_list1,def_list,collo_list,gramexa_list]
+                    #print(senseSUM)
+                    WordList.append(senseSUM)
+        print(WordList)
+        yield {word : WordList}
